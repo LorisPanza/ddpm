@@ -50,7 +50,7 @@ def show_forward_process(steps,model,image):
         plt.show()
 
 
-def training_scheduler(train_data_loader,val_data_loader, epochs=1, timesteps=1000):
+def training_scheduler(train_data_loader,val_data_loader, epochs=1, timesteps=100):
 
     ddpm_model = DDPM(timesteps=timesteps,imagechannels=1)
     optimizer = ddpm_model.configure_optimizers()
@@ -70,20 +70,21 @@ def training_scheduler(train_data_loader,val_data_loader, epochs=1, timesteps=10
             optimizer.step()
 
             print(f"Loss -> {loss.item()}")
+
             training_loss.append(loss)
 
     
     for data,_ in val_data_loader:
-
+        
+        
         plt.imshow(data.permute(0,2,3,1).squeeze(0).numpy())
         plt.show()
+        
         t = torch.randint(0,timesteps,size=(1,))
-        t = torch.Tensor(([200])).type(torch.int64)
-        print(t)
         noised_image = ddpm_model.forward_noise(data,t)
+
         plt.imshow(noised_image.permute(0,2,3,1).squeeze(0).numpy())
         plt.show()
-
 
         for t_actual in reversed(range(t+1)):
             print((t_actual))
