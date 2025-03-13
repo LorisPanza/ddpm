@@ -40,8 +40,6 @@ class TimeEmbedding(nn.Module):
         emb = t[:, None] * emb[None, :]
         emb = torch.cat((emb.sin(), emb.cos()), dim=1)
 
-        #print(f"EMB size {emb.shape}")
-
         # Transform with the MLP
         emb = self.act(self.lin1(emb))
         emb = self.lin2(emb)
@@ -143,7 +141,7 @@ class ResidualBlock(nn.Module):
 
         
 class Attention(nn.Module):
-    def __init__(self, embed_dim,n_heads=2):
+    def __init__(self, embed_dim, n_heads=2):
         super().__init__()
 
         self.dk = embed_dim
@@ -162,21 +160,21 @@ class Attention(nn.Module):
     def forward(self,input):
 
         #CASO IN CUI C è UGUALE ALLA DIMENSIONE DELLA MATRICE DI QKV
-        batch_size, n_features, height,width = input.shape
+        batch_size, n_features, height, width = input.shape
 
         # (B,C,L)->(B,L,C)  L could be also (H,W)
-        x = input.view(batch_size,n_features,-1).permute(0,2,1)
+        x = input.view(batch_size, n_features,-1).permute(0,2,1)
 
         if(self.qkv_dim != n_features):
             print("ERROR - QKV MATRIX FEATURES AND INPUT FEATURES DIM ARE DIFFERENT")
 
         sub_dim = int((self.qkv_dim*3)/self.n_heads)
 
-        # (B,L,C) -> (B,L,C*3)->(B,L,N_HEADS,C*3/N_HEADS)
-        qkv = self.linear(x).view(batch_size,-1,self.n_heads,sub_dim)
+        # (B, L, C) -> (B, L, C*3)->(B, L, N_HEADS,C*3/N_HEADS)
+        qkv = self.linear(x).view(batch_size, -1, self.n_heads, sub_dim)
 
-        # (B,L,N_HEADS,C*3/N_HEADS) -> (B,L,N_HEADS,C/H_HEADS) for k,q,v
-        q,k,v = torch.chunk(qkv,3,dim=-1)
+        # (B, L, N_HEADS, C*3/N_HEADS) -> (B, L, N_HEADS, C/H_HEADS) for k,q,v
+        q,k,v = torch.chunk(qkv, 3, dim=-1)
 
         # (B,L,N_HEADS,C/H_HEADS) -> (B, N_HEADS, L, C/N_HEADS)
         q = q.transpose(1, 2)
@@ -184,22 +182,21 @@ class Attention(nn.Module):
         v = v.transpose(1, 2)
 
         # (B, N_HEADS, L, C/H_HEADS) * (B, N_HEADS, C/N_HEADS, L) -> (B, N_HEADS, L, L)
-        qk = torch.matmul(q,(k.transpose(-1,-2)))/self.scale
+        qk = torch.matmul(q,(k.transpose(-1, -2)))/self.scale
 
         # (B, N_HEADS, L, L) * (B, N_HEADS, L, C/N_HEADS) ->  (B, N_HEADS, L, C/N_HEADS)
-        results_attn = torch.matmul(self.softmax(qk),v)
-
+        results_attn = torch.matmul(self.softmax(qk), v)
 
         # (B, N_HEADS, L, C/N_HEADS ) -> (B, L, N_HEADS, C/N_HEADS)
         results_attn = results_attn.transpose(1,2)
 
         # (B, L, N_HEADS, C/N_HEAD) -> (B, L, C) 
-        results_attn = results_attn.reshape(batch_size,-1,self.qkv_dim)
+        results_attn = results_attn.reshape(batch_size, -1, self.qkv_dim)
 
         #Residual connection (possibile grazie al fatto che qvk dim è uguale al numero di features dell'input)
-        results_attn +=x
+        results_attn += x
 
-        results_attn = results_attn.reshape(batch_size,self.qkv_dim,height,width)
+        results_attn = results_attn.reshape(batch_size, self.qkv_dim, height, width)
 
         #print(f"Attention shape {results_attn.shape}")
 
@@ -270,7 +267,7 @@ class Unet(nn.Module):
         h = [x]
         #print("\n----DOWN---\n")
         for m in self.down_list:
-            if(isinstance(m,nn.Conv2d)):
+            if(isinstance(m, nn.Conv2d)):
                 x=m(x)
                 #print(f"Conv block {x.shape}")
             else:
@@ -283,7 +280,7 @@ class Unet(nn.Module):
 
         #print("\n----UP---\n")
         for m in (self.upper_list):
-            if (isinstance(m,nn.ConvTranspose2d)):
+            if (isinstance(m, nn.ConvTranspose2d)):
                 x = m(x)
             else:
                 residual = h.pop()
