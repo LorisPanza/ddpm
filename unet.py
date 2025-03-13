@@ -5,7 +5,6 @@ import math
 
 def time_embedding(time_embed_dim, timestamp):
 
-
     factor_denomin = 10000**((2 * torch.arange(start=0, end=time_embed_dim//2))/time_embed_dim)
 
     timesteps_dimensionality_half = timestamp[:,None].repeat(1, time_embed_dim//2)/factor_denomin
@@ -35,15 +34,6 @@ class TimeEmbedding(nn.Module):
         self.lin2 = nn.Linear(self.n_channels, self.n_channels)
 
     def forward(self, t: torch.Tensor):
-        # Create sinusoidal position embeddings
-        # [same as those from the transformer](../../transformers/positional_encoding.html)
-        #
-        # \begin{align}
-        # PE^{(1)}_{t,i} &= sin\Bigg(\frac{t}{10000^{\frac{i}{d - 1}}}\Bigg) \\
-        # PE^{(2)}_{t,i} &= cos\Bigg(\frac{t}{10000^{\frac{i}{d - 1}}}\Bigg)
-        # \end{align}
-        #
-        # where $d$ is `half_dim`
         half_dim = self.n_channels // 8
         emb = math.log(10_000) / (half_dim - 1)
         emb = torch.exp(torch.arange(half_dim) * -emb)
@@ -61,7 +51,7 @@ class TimeEmbedding(nn.Module):
 
 
 class DownBlock(nn.Module):
-    def __init__(self,in_channels, out_channels, t_embed_dim,has_attn):
+    def __init__(self,in_channels, out_channels, t_embed_dim, has_attn):
         super().__init__()
 
         self.residual_block = ResidualBlock(in_channels,out_channels,t_embed_dim)
@@ -238,14 +228,14 @@ class Unet(nn.Module):
             out_channels = in_channels * ch_mults[i]
             
             for j in range(n_blocks):
-                module = DownBlock(in_channels, out_channels, time_embedding_size,has_attn=is_attn[i])
+                module = DownBlock(in_channels, out_channels, time_embedding_size, has_attn=is_attn[i])
                 self.down_list.append(module)
-                in_channels=out_channels
+                in_channels = out_channels
             
             if i < unet_depth-1:
                 self.down_list.append(nn.Conv2d(in_channels,in_channels,(3,3),(2,2),(1,1)))
             
-        self.middle=MiddleBlock(in_channels,time_embedding_size)
+        self.middle = MiddleBlock(in_channels,time_embedding_size)
 
         self.upper_list = nn.ModuleList()
 
@@ -253,7 +243,7 @@ class Unet(nn.Module):
             out_channels = in_channels
 
             for j in range(n_blocks):
-                module = UpBlock(in_channels,out_channels,time_embedding_size,has_attn=is_attn[i])
+                module = UpBlock(in_channels, out_channels, time_embedding_size, has_attn = is_attn[i])
                 self.upper_list.append(module)
 
             out_channels=out_channels//ch_mults[i]
@@ -274,11 +264,9 @@ class Unet(nn.Module):
         x = self.conv(x)
 
         #print(f"First convolution {x.shape}")
-
         t = time_embedding(self.time_embedding_size,t)
 
         #print(f"T shape {t.size()}")
-
         h = [x]
         #print("\n----DOWN---\n")
         for m in self.down_list:
