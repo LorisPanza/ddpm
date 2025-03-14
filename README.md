@@ -1,17 +1,48 @@
-# DDPM: Denoising Diffusion Probabilistic Model
+# DDPM Implementation from Scratch
+This repository contains a PyTorch implementation of Denoising Diffusion Probabilistic Models (DDPM) built from scratch. DDPMs are a class of generative models that learn to generate images by gradually denoising a random Gaussian noise.
+## Overview
+Denoising Diffusion Probabilistic Models work by:
 
-This repository contains an implementation of a **Denoising Diffusion Probabilistic Model (DDPM)**. The DDPM model is a generative model designed to iteratively improve noisy images over a series of timesteps, eventually generating a high-quality image from random noise.
+- Forward process - gradually adding noise to images according to a schedule
+- Training a neural network to predict the noise in noisy images
+- Reverse process (sampling) - iteratively denoising random noise to generate new images
 
-# Introduction
+This implementation follows the methodology described in the original paper *"Denoising Diffusion Probabilistic Models" by Ho et al*.
+## Repository Structure
+```shell
+├── ddpm.py           # Core DDPM model implementation
+├── main.py           # Training and visualization script
+├── dataset.py        # Dataset loading and preprocessing
+└── README.md         # This file
+```
 
-The DDPM is a novel generative model based on the idea of modeling the forward process of adding noise to data and then learning the reverse process that denoises the data back to the original distribution. This repository implements the complete training and evaluation pipeline for a DDPM model, demonstrating how to train the model on a given dataset and generate new data by reversing the diffusion process.
+## Features
 
-Key paper: **[Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239)** by Ho et al.
+Complete DDPM implementation with configurable parameters
+Linear noise schedule as described in the original paper
+U-Net architecture with time embeddings for noise prediction
+Training pipeline with visualization tools
+Step-by-step sampling process visualization
 
-# Features
+## Usage
+### Training
+To train the model:
+```shell
+python training.py
+```
+This will:
 
-- Full implementation of the DDPM forward and reverse processes.
-- Configurable model architecture and training parameters.
-- Supports training on custom datasets.
-- Generates high-quality samples by reversing the diffusion process.
-- Visualization tools for tracking training progress and sample generation.
+1. Load the dataset (default is MNIST with images normalized to [-1, 1])
+2. Initialize the DDPM model
+3. Train the model using the diffusion training process
+4. Visualize original, noised, and reconstructed samples
+
+## Citation
+```shell
+@article{ho2020denoising,
+  title={Denoising Diffusion Probabilistic Models},
+  author={Ho, Jonathan and Jain, Ajay and Abbeel, Pieter},
+  journal={arXiv preprint arXiv:2006.11239},
+  year={2020}
+}
+```
