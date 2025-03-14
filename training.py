@@ -2,8 +2,8 @@ import torch
 import matplotlib.pyplot as plt
 import random
 import numpy as np
+from tqdm import tqdm
 
-from unet import Unet
 from ddpm import DDPM
 from dataset import Dataset_diffusion_models
 
@@ -50,16 +50,15 @@ def show_forward_process(steps,model,image):
         plt.show()
 
 
-def training_scheduler(train_data_loader,val_data_loader, epochs=1, timesteps=100):
+def training_scheduler(train_data_loader, val_data_loader, epochs=1, timesteps=100):
 
     ddpm_model = DDPM(timesteps=timesteps,imagechannels=1)
     optimizer = ddpm_model.configure_optimizers()
     training_loss = []
-    print(optimizer)
 
-    for epoch in range(epochs):
-
-        for data,_ in train_data_loader:
+    for epoch in (range(epochs)):
+        print(f"Epoch -> {epoch}")
+        for data, _ in tqdm(train_data_loader):
 
             optimizer.zero_grad()
 
@@ -72,11 +71,9 @@ def training_scheduler(train_data_loader,val_data_loader, epochs=1, timesteps=10
             print(f"Loss -> {loss.item()}")
 
             training_loss.append(loss)
-
+            
     
     for data,_ in val_data_loader:
-        
-        
         plt.imshow(data.permute(0,2,3,1).squeeze(0).numpy())
         plt.show()
         
@@ -87,40 +84,38 @@ def training_scheduler(train_data_loader,val_data_loader, epochs=1, timesteps=10
         plt.show()
 
         for t_actual in reversed(range(t+1)):
-            print((t_actual))
             noised_image = ddpm_model.sampling(noised_image,t_actual)
-
             plt.imshow(noised_image.permute(0,2,3,1).squeeze(0).numpy())
             plt.show()
         
  
 
+def main():
+    # Setting the number of steps in the diffusion process  
+    steps_diffusion_process = 200
 
-steps_diffusion_process = 200
+    # Setting reproducibility
+    SEED = 0
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
 
-# Setting reproducibility
-SEED = 0
-random.seed(SEED)
-np.random.seed(SEED)
-torch.manual_seed(SEED)
+    # Model Parameters
+    batch_size=32
 
-# Model Parameters
-fashion = True
-batch_size=16
+    # Loading the data (converting each image into a tensor and normalizing between [-1, 1])
+    dataset = Dataset_diffusion_models(batch_size=batch_size)
+    train_loader, test_loader = dataset.data_loader()
 
-# DDPM model initialization
-ddpm_model = DDPM(steps_diffusion_process)
-
-# Loading the data (converting each image into a tensor and normalizing between [-1, 1])
-dataset = Dataset_diffusion_models(batch_size=32)
-train_loader, val_loader = dataset.data_loader()
-
-verbose_diffusion = False
-
-if(verbose_diffusion):
-    # Showing first batch
-    show_first_batch(train_loader)   
+    verbose_diffusion = False
+    if(verbose_diffusion):
+        # Showing first batch
+        show_first_batch(train_loader)   
 
 
-training_scheduler(train_loader,val_loader)
+    training_scheduler(train_loader, test_loader)
 
+
+if __name__ == '__main__':
+    main()
+    
